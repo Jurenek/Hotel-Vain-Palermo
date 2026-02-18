@@ -1,0 +1,121 @@
+{
+  "requests": [
+    {
+      "messages": [
+        {
+          "sender": "guest",
+          "text": "Debug Msg 3",
+          "timestamp": "2026-02-18T00:12:40.248Z"
+        }
+      ],
+      "guestId": "debug-test-3",
+      "guestName": "Guest",
+      "roomNumber": "Unknown",
+      "type": "taxi",
+      "id": "h2t48m4",
+      "status": "pending",
+      "createdAt": "2026-02-18T00:12:40.249Z",
+      "updatedAt": "2026-02-18T00:12:40.249Z"
+    },
+    {
+      "messages": [
+        {
+          "sender": "guest",
+          "text": "Debug Msg 3",
+          "timestamp": "2026-02-18T00:12:55.513Z"
+        }
+      ],
+      "guestId": "debug-test-3",
+      "guestName": "Guest",
+      "roomNumber": "Unknown",
+      "type": "taxi",
+      "id": "kfwfmsg",
+      "status": "pending",
+      "createdAt": "2026-02-18T00:12:55.513Z",
+      "updatedAt": "2026-02-18T00:12:55.513Z"
+    },
+    {
+      "messages": [
+        {
+          "sender": "guest",
+          "text": "Debug Msg 3",
+          "timestamp": "2026-02-18T00:13:07.391Z"
+        }
+      ],
+      "guestId": "debug-test-3",
+      "guestName": "Guest",
+      "roomNumber": "Unknown",
+      "type": "taxi",
+      "id": "1zrxp2x",
+      "status": "pending",
+      "createdAt": "2026-02-18T00:13:07.392Z",
+      "updatedAt": "2026-02-18T00:13:07.392Z"
+    },
+    {
+      "messages": [
+        {
+          "sender": "guest",
+          "text": "Debug Msg 5",
+          "timestamp": "2026-02-18T00:13:20.800Z"
+        }
+      ],
+      "guestId": "debug-test-5",
+      "guestName": "Guest",
+      "roomNumber": "Unknown",
+      "type": "taxi",
+      "id": "l4371tm",
+      "status": "pending",
+      "createdAt": "2026-02-18T00:13:20.800Z",
+      "updatedAt": "2026-02-18T00:13:20.800Z"
+    },
+    {
+      "messages": [
+        {
+          "sender": "guest",
+          "text": "llkljl",
+          "timestamp": "2026-02-18T00:20:29.176Z"
+        },
+        {
+          "sender": "reception",
+          "text": "Test Response from Reception",
+          "timestamp": "2026-02-18T00:29:46.914Z"
+        },
+        {
+          "sender": "reception",
+          "text": "a ke hora ",
+          "timestamp": "2026-02-18T00:31:08.718Z"
+        }
+      ],
+      "guestId": "Invitado",
+      "guestName": "Invitado",
+      "roomNumber": "304",
+      "type": "taxi",
+      "id": "tqwvmxw",
+      "status": "completed",
+      "createdAt": "2026-02-18T00:20:29.178Z",
+      "updatedAt": "2026-02-18T00:31:21.362Z"
+    },
+    {
+      "messages": [
+        {
+          "sender": "guest",
+          "text": "don julio 20 hs x 2 ",
+          "timestamp": "2026-02-18T00:32:19.242Z"
+        },
+        {
+          "sender": "reception",
+          "text": "no hay lugar ",
+          "timestamp": "2026-02-18T00:32:36.478Z"
+        }
+      ],
+      "guestId": "Invitado",
+      "guestName": "Invitado",
+      "roomNumber": "304",
+      "type": "restaurant",
+      "id": "s7jg0n8",
+      "status": "completed",
+      "createdAt": "2026-02-18T00:32:19.243Z",
+      "updatedAt": "2026-02-18T00:55:45.236Z"
+    }
+  ]
+}
