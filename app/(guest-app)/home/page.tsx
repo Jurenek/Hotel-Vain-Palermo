@@ -12,27 +12,63 @@ import {
     Music,
     MapPin,
     Home as HomeIcon,
-    Calendar,
     Info,
+    Loader2,
 } from 'lucide-react';
 import { useGuestStore } from '@/lib/store';
 import { getGreeting } from '@/lib/utils';
+
+interface HotelSettings {
+    wifi_network: string;
+    wifi_password: string;
+    breakfast_start: string;
+    breakfast_end: string;
+    breakfast_location: string;
+    pool_start: string;
+    pool_end: string;
+    pool_location: string;
+}
 
 export default function HomePage() {
     const router = useRouter();
     const { guest } = useGuestStore();
     const [mounted, setMounted] = useState(false);
     const [chatOpen, setChatOpen] = useState(false);
+    const [settings, setSettings] = useState<HotelSettings | null>(null);
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        setMounted(true);
+        fetch('/api/hotel-settings', { cache: 'no-store' })
+            .then(r => r.json())
+            .then(data => setSettings(data))
+            .catch(() => {
+                // Fallback to defaults
+                setSettings({
+                    wifi_network: 'VAIN_GUEST',
+                    wifi_password: guest.wifiPassword,
+                    breakfast_start: '7:00',
+                    breakfast_end: '11:00',
+                    breakfast_location: 'Lobby Bar',
+                    pool_start: '9:00',
+                    pool_end: '20:00',
+                    pool_location: 'Rooftop Terrace',
+                });
+            });
+    }, []);
 
     if (!mounted) return null;
 
     const greeting = getGreeting();
 
-    const hotelInfo = {
-        breakfast: { start: '7:00', end: '11:00', location: 'Lobby Bar' },
-        pool: { start: '9:00', end: '20:00', location: 'Rooftop Terrace' },
+    const hotelInfo = settings || {
+        breakfast_start: '7:00',
+        breakfast_end: '11:00',
+        breakfast_location: 'Lobby Bar',
+        pool_start: '9:00',
+        pool_end: '20:00',
+        pool_location: 'Rooftop Terrace',
+        wifi_network: 'VAIN_GUEST',
+        wifi_password: guest.wifiPassword,
     };
 
     return (
@@ -76,12 +112,12 @@ export default function HomePage() {
                         </div>
                         <div className="flex-1">
                             <h3 className="font-medium text-stone-900 mb-1">WiFi del Hotel</h3>
-                            <p className="text-sm text-stone-600 mb-3">Red: <span className="font-mono font-medium">VAIN_GUEST</span></p>
+                            <p className="text-sm text-stone-600 mb-3">Red: <span className="font-mono font-medium">{hotelInfo.wifi_network}</span></p>
                             <div className="flex items-center justify-between bg-stone-50 p-3 rounded-lg border border-stone-200">
-                                <code className="text-sm font-mono text-stone-800">{guest.wifiPassword}</code>
+                                <code className="text-sm font-mono text-stone-800">{hotelInfo.wifi_password}</code>
                                 <button
                                     onClick={() => {
-                                        navigator.clipboard.writeText(guest.wifiPassword);
+                                        navigator.clipboard.writeText(hotelInfo.wifi_password);
                                         alert('¡Contraseña copiada!');
                                     }}
                                     className="text-xs bg-stone-800 text-white px-3 py-1 rounded-full hover:bg-stone-700 transition-all"
@@ -108,12 +144,12 @@ export default function HomePage() {
                             <div>
                                 <p className="font-medium">Desayuno</p>
                                 <p className="text-sm text-stone-500">
-                                    {hotelInfo.breakfast.location}
+                                    {hotelInfo.breakfast_location}
                                 </p>
                             </div>
                         </div>
                         <span className="text-sm text-stone-600">
-                            {hotelInfo.breakfast.start} - {hotelInfo.breakfast.end}
+                            {hotelInfo.breakfast_start} - {hotelInfo.breakfast_end}
                         </span>
                     </motion.div>
 
@@ -126,12 +162,12 @@ export default function HomePage() {
                             <div>
                                 <p className="font-medium">Rooftop Pool</p>
                                 <p className="text-sm text-stone-500">
-                                    {hotelInfo.pool.location}
+                                    {hotelInfo.pool_location}
                                 </p>
                             </div>
                         </div>
                         <span className="text-sm text-stone-600">
-                            {hotelInfo.pool.start} - {hotelInfo.pool.end}
+                            {hotelInfo.pool_start} - {hotelInfo.pool_end}
                         </span>
                     </motion.div>
                 </div>
@@ -208,7 +244,7 @@ const BottomNav = ({ active, onNavigate }: { active: string; onNavigate: (screen
             <NavButton icon={HomeIcon} label="Inicio" active={active === 'home'} onClick={() => onNavigate('home')} />
             <NavButton icon={Music} label="Experiencias" active={active === 'experiences'} onClick={() => onNavigate('experiences')} />
             <NavButton icon={Info} label="Info" active={active === 'info'} onClick={() => onNavigate('info')} />
-            <NavButton icon={Calendar} label="Check-in" active={active === 'checkin'} onClick={() => onNavigate('checkin')} />
+            <NavButton icon={MessageCircle} label="Concierge" active={active === 'concierge'} onClick={() => onNavigate('concierge')} />
         </div>
     </div>
 );
@@ -277,4 +313,3 @@ function ChatOverlay({ onClose, guestName }: { onClose: () => void; guestName: s
         </motion.div>
     );
 }
-

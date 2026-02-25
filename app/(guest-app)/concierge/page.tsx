@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -98,9 +98,9 @@ export default function ConciergePage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800';
-            case 'in_progress': return 'bg-blue-100 text-blue-800';
-            case 'completed': return 'bg-green-100 text-green-800';
+            case 'pending': return 'bg-amber-100 text-amber-800 border border-amber-200';
+            case 'in_progress': return 'bg-blue-100 text-blue-800 border border-blue-200';
+            case 'completed': return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
             default: return 'bg-stone-100 text-stone-800';
         }
     };
@@ -131,42 +131,20 @@ export default function ConciergePage() {
             </div>
 
             <div className="p-6 space-y-6">
-                {/* Active Requests */}
+                {/* Active Requests with Chat */}
                 {requests.length > 0 && (
-                    <div className="bg-white border border-stone-200 rounded-sm p-6">
+                    <div>
                         <h3 className="font-medium text-lg mb-4">Tus Solicitudes</h3>
                         <div className="space-y-4">
                             {requests.map((request) => (
-                                <div key={request.id} className="border border-stone-100 rounded-sm p-4 bg-stone-50">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="flex items-center space-x-2">
-                                            {queryTypes.find(t => t.id === request.type)?.icon && (() => {
-                                                const Icon = queryTypes.find(t => t.id === request.type)!.icon;
-                                                return <Icon className="w-4 h-4 text-stone-600" />
-                                            })()}
-                                            <span className="font-medium text-sm">
-                                                {queryTypes.find(t => t.id === request.type)?.label || request.type}
-                                            </span>
-                                        </div>
-                                        <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(request.status)}`}>
-                                            {getStatusLabel(request.status)}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-stone-600 mb-3 ml-6">
-                                        {/* Show latest message from reception if any */}
-                                        {request.messages.filter(m => m.sender === 'reception').length > 0 ? (
-                                            <div className="bg-white p-2 rounded border border-stone-100 mt-2">
-                                                <p className="text-xs font-semibold text-stone-900 mb-1">Recepción:</p>
-                                                <p>{request.messages.filter(m => m.sender === 'reception').pop()?.text}</p>
-                                            </div>
-                                        ) : (
-                                            <p className="italic text-stone-400">Esperando respuesta...</p>
-                                        )}
-                                    </div>
-                                    <div className="text-xs text-stone-400 text-right">
-                                        {new Date(request.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                </div>
+                                <RequestChat
+                                    key={request.id}
+                                    request={request}
+                                    queryTypes={queryTypes}
+                                    getStatusColor={getStatusColor}
+                                    getStatusLabel={getStatusLabel}
+                                    onMessageSent={fetchRequests}
+                                />
                             ))}
                         </div>
                     </div>
@@ -324,6 +302,155 @@ export default function ConciergePage() {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+// Individual Request with expandable chat
+function RequestChat({ request, queryTypes, getStatusColor, getStatusLabel, onMessageSent }: {
+    request: Request;
+    queryTypes: { id: string; label: string; icon: any }[];
+    getStatusColor: (status: string) => string;
+    getStatusLabel: (status: string) => string;
+    onMessageSent: () => void;
+}) {
+    const [expanded, setExpanded] = useState(request.status !== 'completed');
+    const [replyText, setReplyText] = useState('');
+    const [sending, setSending] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        if (expanded) scrollToBottom();
+    }, [expanded, request.messages.length]);
+
+    const handleReply = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!replyText.trim()) return;
+        setSending(true);
+        try {
+            await fetch(`/api/requests/${request.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: replyText, sender: 'guest' }),
+            });
+            setReplyText('');
+            onMessageSent();
+        } catch (error) {
+            console.error('Error sending reply', error);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const TypeIcon = queryTypes.find(t => t.id === request.type)?.icon;
+    const canReply = request.status !== 'completed';
+
+    return (
+        <div className="bg-white border border-stone-200 rounded-xl overflow-hidden shadow-sm">
+            {/* Request Header - always visible */}
+            <button
+                onClick={() => setExpanded(!expanded)}
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-stone-50 transition"
+            >
+                <div className="flex items-center space-x-3">
+                    {TypeIcon && <TypeIcon className="w-5 h-5 text-stone-600" />}
+                    <div>
+                        <span className="font-medium text-sm text-stone-900">
+                            {queryTypes.find(t => t.id === request.type)?.label || request.type}
+                        </span>
+                        <p className="text-xs text-stone-400">
+                            {new Date(request.createdAt).toLocaleDateString()} · {new Date(request.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(request.status)}`}>
+                        {getStatusLabel(request.status)}
+                    </span>
+                    <motion.span
+                        animate={{ rotate: expanded ? 180 : 0 }}
+                        className="text-stone-400 text-sm"
+                    >
+                        ▼
+                    </motion.span>
+                </div>
+            </button>
+
+            {/* Chat Thread - expandable */}
+            {expanded && (
+                <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    className="border-t border-stone-100"
+                >
+                    {/* Messages */}
+                    <div className="max-h-64 overflow-y-auto p-4 space-y-3 bg-stone-50">
+                        {request.messages.length === 0 ? (
+                            <p className="text-center text-stone-400 text-sm italic py-4">
+                                Esperando respuesta de recepción...
+                            </p>
+                        ) : (
+                            request.messages.map((msg, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`flex ${msg.sender === 'guest' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${msg.sender === 'guest'
+                                        ? 'bg-stone-900 text-white rounded-br-sm'
+                                        : 'bg-amber-50 border border-amber-200 text-stone-900 rounded-bl-sm shadow-sm'
+                                        }`}>
+                                        <p className={`text-xs font-semibold mb-1 ${msg.sender === 'guest' ? 'text-stone-300' : 'text-amber-700'
+                                            }`}>
+                                            {msg.sender === 'guest' ? 'Tú' : '🛎️ Recepción'}
+                                        </p>
+                                        <p className="text-sm">{msg.text}</p>
+                                        <p className={`text-xs mt-1 ${msg.sender === 'guest' ? 'text-stone-400' : 'text-amber-500'
+                                            }`}>
+                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Reply Input */}
+                    {canReply && (
+                        <form onSubmit={handleReply} className="p-3 border-t border-stone-100 flex space-x-2 bg-white">
+                            <input
+                                type="text"
+                                value={replyText}
+                                onChange={e => setReplyText(e.target.value)}
+                                placeholder="Escribir respuesta..."
+                                className="flex-1 border border-stone-300 rounded-full px-4 py-2 text-sm outline-none focus:border-stone-900 transition"
+                            />
+                            <button
+                                type="submit"
+                                disabled={sending || !replyText.trim()}
+                                className="bg-stone-900 text-white p-2 rounded-full hover:bg-stone-800 disabled:opacity-40 transition"
+                            >
+                                {sending ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Send className="w-4 h-4" />
+                                )}
+                            </button>
+                        </form>
+                    )}
+
+                    {/* Completed callout */}
+                    {!canReply && (
+                        <div className="p-3 bg-green-50 text-center text-xs text-green-700 border-t border-green-100">
+                            ✓ Esta solicitud fue completada
+                        </div>
+                    )}
+                </motion.div>
+            )}
         </div>
     );
 }

@@ -5,7 +5,7 @@ import { getRequests, createRequest, Request as DbRequest } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-    const requests = getRequests();
+    const requests = await getRequests();
     return NextResponse.json(requests);
 }
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const newRequest = createRequest({
+        const newRequest = await createRequest({
             guestId,
             guestName: guestName || 'Guest',
             roomNumber: roomNumber || 'Unknown',

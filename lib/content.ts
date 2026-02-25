@@ -70,7 +70,7 @@ export const experiences: Experience[] = [
         venue: 'Palermo Soho',
         description: 'Mejor parrilla de Buenos Aires - Recomendación top',
         time: 'Varios horarios',
-        price: 'USD 60-80',
+        price: 'USD 80-100',
         icon: 'UtensilsCrossed',
         category: 'food',
         bookable: false, // Solo recomendación, no hacemos reserva
