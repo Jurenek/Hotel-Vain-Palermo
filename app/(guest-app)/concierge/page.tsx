@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { VainLogo } from '@/components/VainLogo';
 import {
     Car,
     UtensilsCrossed,
@@ -98,10 +99,10 @@ export default function ConciergePage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'pending': return 'bg-amber-100 text-amber-800 border border-amber-200';
-            case 'in_progress': return 'bg-blue-100 text-blue-800 border border-blue-200';
-            case 'completed': return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
-            default: return 'bg-stone-100 text-stone-800';
+            case 'pending': return 'bg-amber-500 text-white shadow-sm';
+            case 'in_progress': return 'bg-blue-600 text-white shadow-sm';
+            case 'completed': return 'bg-emerald-600 text-white shadow-sm';
+            default: return 'bg-stone-200 text-stone-700';
         }
     };
 
@@ -117,17 +118,20 @@ export default function ConciergePage() {
     return (
         <div className="min-h-screen bg-stone-50 pb-20">
             {/* Header */}
-            <div className="bg-stone-900 text-white p-6">
-                <button
-                    onClick={() => router.push('/home')}
-                    className="mb-4 text-stone-400 hover:text-white transition"
-                >
-                    ← Volver
-                </button>
-                <h2 className="text-2xl font-light tracking-wide">Concierge</h2>
-                <p className="text-sm text-stone-400 mt-2">
-                    ¿En qué podemos ayudarte hoy?
-                </p>
+            <div className="bg-stone-900 text-white p-6 flex justify-between items-end">
+                <div>
+                    <button
+                        onClick={() => router.push('/home')}
+                        className="mb-4 text-stone-400 hover:text-white transition text-xs flex items-center"
+                    >
+                        <span className="mr-1">←</span> Volver
+                    </button>
+                    <h2 className="text-2xl font-light tracking-wide">Concierge</h2>
+                    <p className="text-xs text-stone-500 mt-1 uppercase tracking-widest">
+                        Mayordomía 24/7
+                    </p>
+                </div>
+                <VainLogo className="w-16" light showSubtitle={false} />
             </div>
 
             <div className="p-6 space-y-6">
@@ -399,16 +403,16 @@ function RequestChat({ request, queryTypes, getStatusColor, getStatusLabel, onMe
                                     key={idx}
                                     className={`flex ${msg.sender === 'guest' ? 'justify-end' : 'justify-start'}`}
                                 >
-                                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${msg.sender === 'guest'
+                                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm ${msg.sender === 'guest'
                                         ? 'bg-stone-900 text-white rounded-br-sm'
-                                        : 'bg-amber-50 border border-amber-200 text-stone-900 rounded-bl-sm shadow-sm'
+                                        : 'bg-white border border-amber-200 text-stone-900 rounded-bl-sm'
                                         }`}>
-                                        <p className={`text-xs font-semibold mb-1 ${msg.sender === 'guest' ? 'text-stone-300' : 'text-amber-700'
+                                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${msg.sender === 'guest' ? 'text-stone-400' : 'text-amber-600'
                                             }`}>
                                             {msg.sender === 'guest' ? 'Tú' : '🛎️ Recepción'}
                                         </p>
-                                        <p className="text-sm">{msg.text}</p>
-                                        <p className={`text-xs mt-1 ${msg.sender === 'guest' ? 'text-stone-400' : 'text-amber-500'
+                                        <p className="text-[15px] leading-relaxed">{msg.text}</p>
+                                        <p className={`text-[10px] mt-1.5 flex justify-end ${msg.sender === 'guest' ? 'text-stone-500' : 'text-stone-400'
                                             }`}>
                                             {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>

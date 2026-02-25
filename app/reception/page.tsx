@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { VainLogo } from '@/components/VainLogo';
 import {
     Clock,
     CheckCircle2,
@@ -91,12 +92,13 @@ export default function ReceptionPage() {
     return (
         <div className="flex flex-col h-screen overflow-hidden">
             {/* Top Header */}
-            <div className="bg-stone-900 text-white px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                    <LayoutDashboard className="w-5 h-5 text-stone-400" />
+            <div className="bg-stone-900 text-white px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                    <VainLogo className="w-20" light showSubtitle={false} />
+                    <div className="h-6 w-px bg-stone-700 mx-2" />
                     <div>
-                        <h1 className="text-xl font-light tracking-wide">Recepción VAIN</h1>
-                        <p className="text-xs text-stone-400">Panel de gestión</p>
+                        <h1 className="text-sm font-medium tracking-widest uppercase">Recepción</h1>
+                        <p className="text-[10px] text-stone-500 uppercase tracking-tighter">Panel de gestión</p>
                     </div>
                 </div>
             </div>
@@ -208,8 +210,14 @@ function RequestsTab() {
                         <button
                             key={f}
                             onClick={() => setFilter(f as any)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider ${filter === f
-                                ? 'bg-stone-900 text-white'
+                            className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider whitespace-nowrap ${filter === f
+                                ? f === 'pending'
+                                    ? 'bg-amber-500 text-white'
+                                    : f === 'in_progress'
+                                        ? 'bg-blue-500 text-white'
+                                        : f === 'completed'
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-stone-900 text-white'
                                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                                 }`}
                         >
@@ -244,7 +252,9 @@ function RequestsTab() {
                                     <span className="capitalize px-1.5 py-0.5 bg-stone-100 rounded text-xs border border-stone-200">
                                         {req.type}
                                     </span>
-                                    {getStatusIcon(req.status)}
+                                    {req.status === 'pending' && <span className="text-[10px] px-2 py-0.5 bg-amber-500 text-white rounded-full font-bold uppercase tracking-wider">Pendiente</span>}
+                                    {req.status === 'in_progress' && <span className="text-[10px] px-2 py-0.5 bg-blue-600 text-white rounded-full font-bold uppercase tracking-wider">En Proceso</span>}
+                                    {req.status === 'completed' && <span className="text-[10px] px-2 py-0.5 bg-emerald-600 text-white rounded-full font-bold uppercase tracking-wider">Listo</span>}
                                 </div>
                                 <p className="text-sm text-stone-500 line-clamp-2">
                                     {req.messages[0]?.text || "Sin mensaje"}
@@ -302,15 +312,18 @@ function RequestsTab() {
                         </div>
 
                         {/* Chat / Timeline */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-stone-50">
                             {selectedRequest.messages.map((msg, idx) => (
                                 <div key={idx} className={`flex ${msg.sender === 'reception' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[70%] rounded-lg p-4 ${msg.sender === 'reception'
-                                        ? 'bg-stone-900 text-white rounded-br-none'
-                                        : 'bg-white border border-stone-200 rounded-bl-none shadow-sm'
+                                    <div className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${msg.sender === 'reception'
+                                        ? 'bg-stone-900 text-white rounded-br-sm'
+                                        : 'bg-white border border-amber-200 text-stone-900 rounded-bl-sm'
                                         }`}>
-                                        <p className="text-sm">{msg.text}</p>
-                                        <p className={`text-xs mt-2 text-stone-400`}>
+                                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${msg.sender === 'reception' ? 'text-stone-400' : 'text-amber-600'}`}>
+                                            {msg.sender === 'reception' ? '🛎️ Recepción' : '👤 Huésped'}
+                                        </p>
+                                        <p className="text-[15px] leading-relaxed">{msg.text}</p>
+                                        <p className={`text-[10px] mt-1.5 flex justify-end ${msg.sender === 'reception' ? 'text-stone-500' : 'text-stone-400'}`}>
                                             {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>

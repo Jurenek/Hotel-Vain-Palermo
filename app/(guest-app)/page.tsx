@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useGuestStore } from '@/lib/store';
+import { VainLogo } from '@/components/VainLogo';
 
 export default function WelcomePage() {
     const router = useRouter();
@@ -52,15 +53,9 @@ export default function WelcomePage() {
                     initial={{ scale: 0.9 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, duration: 0.5 }}
-                    className="text-center space-y-3"
+                    className="flex justify-center mb-8"
                 >
-                    <div className="flex justify-center">
-                        <img
-                            src="/Logo-Vain.webp"
-                            alt="VAIN Hotel"
-                            className="h-20 w-auto object-contain"
-                        />
-                    </div>
+                    <VainLogo className="w-48" />
                     <p className="text-xs tracking-[0.4em] text-stone-600 uppercase font-body">Boutique Hotel</p>
                     <p className="text-sm text-stone-700 font-body font-light">Palermo Soho · Buenos Aires</p>
                 </motion.div>

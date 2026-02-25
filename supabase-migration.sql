@@ -67,3 +67,23 @@ CREATE POLICY "Allow public read experiences" ON experiences FOR SELECT USING (t
 -- Allow public write access (for the reception dashboard, no auth yet)
 CREATE POLICY "Allow public write hotel_settings" ON hotel_settings FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public write experiences" ON experiences FOR ALL USING (true) WITH CHECK (true);
+
+-- 3. Requests Table
+CREATE TABLE IF NOT EXISTS requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    guest_id TEXT NOT NULL,
+    guest_name TEXT NOT NULL,
+    room_number TEXT NOT NULL,
+    type TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    messages JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read/write (for demo purposes)
+CREATE POLICY "Allow public read requests" ON requests FOR SELECT USING (true);
+CREATE POLICY "Allow public write requests" ON requests FOR ALL USING (true) WITH CHECK (true);
