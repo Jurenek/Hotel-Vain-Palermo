@@ -718,13 +718,16 @@ function ServicesTab() {
 
     const fetchSettings = async () => {
         try {
+            setLoading(true);
             const res = await fetch('/api/hotel-settings', { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
                 setSettings(data);
+            } else {
+                console.error('[ServicesTab] API Error:', res.status);
             }
         } catch (error) {
-            console.error('Error fetching settings', error);
+            console.error('[ServicesTab] Connection Error:', error);
         } finally {
             setLoading(false);
         }
@@ -895,13 +898,16 @@ function WifiInfoTab() {
 
     const fetchSettings = async () => {
         try {
+            setLoading(true);
             const res = await fetch('/api/hotel-settings', { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
                 setSettings(data);
+            } else {
+                console.error('[WifiInfoTab] API Error:', res.status);
             }
         } catch (error) {
-            console.error('Error fetching settings', error);
+            console.error('[WifiInfoTab] Connection Error:', error);
         } finally {
             setLoading(false);
         }
@@ -1070,7 +1076,7 @@ function WifiInfoTab() {
                         <h3 className="font-medium text-stone-900">Amenities</h3>
                     </div>
                     <div className="flex flex-wrap gap-2 mb-3">
-                        {settings.amenities.map((amenity, idx) => (
+                        {(settings.amenities || []).map((amenity, idx) => (
                             <span key={idx} className="flex items-center space-x-1 bg-stone-100 text-stone-700 px-3 py-1.5 rounded-full text-sm">
                                 <span>{amenity}</span>
                                 <button onClick={() => removeAmenity(idx)} className="text-stone-400 hover:text-red-500 ml-1">
