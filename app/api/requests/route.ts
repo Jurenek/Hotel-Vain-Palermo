@@ -5,8 +5,19 @@ import { getRequests, createRequest, Request as DbRequest } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-    const requests = await getRequests();
-    return NextResponse.json(requests);
+    try {
+        const requests = await getRequests();
+        return NextResponse.json(requests);
+    } catch (error) {
+        console.error('Error in GET /api/requests:', error);
+        return NextResponse.json(
+            {
+                error: 'Internal Server Error',
+                message: error instanceof Error ? error.message : String(error)
+            },
+            { status: 500 }
+        );
+    }
 }
 
 export async function POST(request: Request) {

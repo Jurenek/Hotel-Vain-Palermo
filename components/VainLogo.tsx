@@ -12,30 +12,38 @@ export const VainLogo: React.FC<VainLogoProps> = ({
     light = false,
     showSubtitle = true
 }) => {
-    const color = light ? "text-white" : "text-stone-900";
-    const subColor = light ? "text-stone-400" : "text-stone-500";
-
     return (
-        <div className={`flex flex-col items-center justify-center space-y-2 ${className}`}>
-            {/* Crown Icon */}
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className={`w-6 h-6 ${color}`}
-            >
-                <path d="M3 19h18L19 7l-4 5-3-8-3 8-4-5L3 19z" fill="currentColor" />
-            </svg>
+        <div className={`flex flex-col items-center justify-center ${className}`}>
+            {/* Minimalist Premium Crown */}
+            <div className="mb-1">
+                <svg
+                    viewBox="0 0 100 40"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`h-6 w-auto ${light ? 'text-stone-300' : 'text-amber-600'}`}
+                >
+                    <path
+                        d="M20 35 L10 10 L30 20 L50 5 L70 20 L90 10 L80 35 Z"
+                        fill="currentColor"
+                        stroke="currentColor"
+                        strokeWidth="1"
+                        strokeLinejoin="round"
+                    />
+                </svg>
+            </div>
 
-            {/* VAIN Wordmark */}
-            <div className={`text-4xl font-extrabold tracking-[0.2em] leading-none ${color} font-sans`}>
-                VAIN
+            {/* Official VAIN Wordmark Image */}
+            <div className="w-full px-1">
+                <img
+                    src="/Logo-Vain.webp"
+                    alt="VAIN"
+                    className={`h-auto w-full object-contain ${light ? 'invert brightness-200' : ''}`}
+                />
             </div>
 
             {/* Subtitle */}
             {showSubtitle && (
-                <div className={`text-[8px] tracking-[0.5em] uppercase font-light ${subColor}`}>
+                <div className={`mt-1 text-[8px] tracking-[0.7em] uppercase font-light ${light ? 'text-stone-400' : 'text-stone-500'}`}>
                     Boutique Hotel
                 </div>
             )}

@@ -46,24 +46,38 @@ export default function ConciergePage() {
 
     const fetchRequests = async () => {
         try {
-            const res = await fetch('/api/requests', { cache: 'no-store' });
+            // Use timestamp to bypass any browser or proxy cache
+            const timestamp = Date.now();
+            const res = await fetch(`/api/requests?t=${timestamp}`, {
+                cache: 'no-store',
+                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+            });
+
             if (res.ok) {
                 const allRequests = await res.json();
-                // Filter requests for the current guest (store guest name/room)
-                // In a real app we'd filter on the server or use a unique ID
-                const myRequests = allRequests.filter((r: Request & { guestName: string, roomNumber: string }) =>
-                    r.guestName === guest.name && r.roomNumber === guest.roomNumber
-                );
+
+                // Robust filtering to avoid mismatches due to spaces or casing
+                const activeGuestName = (guest.name || '').trim().toLowerCase();
+                const activeRoomNum = (guest.roomNumber || '').trim().toLowerCase();
+
+                const myRequests = allRequests.filter((r: any) => {
+                    const reqName = (r.guestName || '').trim().toLowerCase();
+                    const reqRoom = (r.roomNumber || '').trim().toLowerCase();
+                    const match = reqName === activeGuestName && reqRoom === activeRoomNum;
+                    return match;
+                });
+
+                console.log(`[Polling] System time: ${new Date().toLocaleTimeString()} | Total: ${allRequests.length} | Mine: ${myRequests.length}`);
                 setRequests(myRequests);
             }
         } catch (error) {
-            console.error('Failed to fetch requests', error);
+            console.error('[Polling] Error fetching requests:', error);
         }
     };
 
     useEffect(() => {
         fetchRequests();
-        const interval = setInterval(fetchRequests, 5000); // Poll every 5s
+        const interval = setInterval(fetchRequests, 2000); // More frequent polling (2s)
         return () => clearInterval(interval);
     }, [guest.name, guest.roomNumber]);
 
@@ -205,7 +219,7 @@ export default function ConciergePage() {
 
                             {/* Tipo de consulta */}
                             <div>
-                                <label className="text-sm font-medium block mb-2">
+                                <label className="text-xs font-bold uppercase tracking-widest block mb-2 text-stone-500">
                                     Tipo de consulta *
                                 </label>
                                 <select
@@ -214,12 +228,12 @@ export default function ConciergePage() {
                                         setFormData({ ...formData, queryType: e.target.value })
                                     }
                                     required
-                                    className="w-full border border-stone-300 rounded-sm p-3 outline-none focus:border-stone-500"
+                                    className="w-full border-b-2 border-stone-200 bg-transparent py-3 outline-none focus:border-stone-900 transition-colors text-stone-900 appearance-none rounded-none"
                                 >
-                                    <option value="">Seleccionar...</option>
+                                    <option value="" className="text-stone-400">Seleccionar servicio...</option>
                                     {queryTypes.map((type) => (
                                         <option key={type.id} value={type.id}>
-                                            {type.label}
+                                            {type.label.toUpperCase()}
                                         </option>
                                     ))}
                                 </select>
@@ -227,8 +241,8 @@ export default function ConciergePage() {
 
                             {/* Mensaje */}
                             <div>
-                                <label className="text-sm font-medium block mb-2">
-                                    Mensaje *
+                                <label className="text-xs font-bold uppercase tracking-widest block mb-2 text-stone-500">
+                                    ¿En qué podemos ayudarte? *
                                 </label>
                                 <textarea
                                     value={formData.message}
@@ -236,9 +250,9 @@ export default function ConciergePage() {
                                         setFormData({ ...formData, message: e.target.value })
                                     }
                                     required
-                                    rows={4}
-                                    placeholder="Describe tu solicitud o consulta..."
-                                    className="w-full border border-stone-300 rounded-sm p-3 outline-none focus:border-stone-500 resize-none"
+                                    rows={3}
+                                    placeholder="Escribe tu mensaje aquí..."
+                                    className="w-full border-b-2 border-stone-200 bg-transparent py-3 outline-none focus:border-stone-900 transition-colors resize-none text-stone-900 rounded-none placeholder:text-stone-300"
                                 />
                             </div>
 
@@ -403,19 +417,20 @@ function RequestChat({ request, queryTypes, getStatusColor, getStatusLabel, onMe
                                     key={idx}
                                     className={`flex ${msg.sender === 'guest' ? 'justify-end' : 'justify-start'}`}
                                 >
-                                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm ${msg.sender === 'guest'
-                                        ? 'bg-stone-900 text-white rounded-br-sm'
-                                        : 'bg-white border border-amber-200 text-stone-900 rounded-bl-sm'
+                                    <div className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-sm border ${msg.sender === 'guest'
+                                        ? 'bg-amber-50 border-amber-200 text-stone-950 rounded-br-none'
+                                        : 'bg-stone-900 border-stone-900 text-white rounded-bl-none'
                                         }`}>
-                                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${msg.sender === 'guest' ? 'text-stone-400' : 'text-amber-600'
-                                            }`}>
-                                            {msg.sender === 'guest' ? 'Tú' : '🛎️ Recepción'}
-                                        </p>
-                                        <p className="text-[15px] leading-relaxed">{msg.text}</p>
-                                        <p className={`text-[10px] mt-1.5 flex justify-end ${msg.sender === 'guest' ? 'text-stone-500' : 'text-stone-400'
-                                            }`}>
-                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
+                                        <div className="flex items-center justify-between mb-1.5 opacity-80">
+                                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${msg.sender === 'guest' ? 'text-amber-800' : 'text-stone-300'
+                                                }`}>
+                                                {msg.sender === 'guest' ? 'Huésped' : '🛎️ Recepción'}
+                                            </p>
+                                            <p className={`text-[9px] font-medium ${msg.sender === 'guest' ? 'text-amber-600' : 'text-stone-500'}`}>
+                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                        <p className="text-[15px] leading-relaxed font-medium">{msg.text}</p>
                                     </div>
                                 </div>
                             ))

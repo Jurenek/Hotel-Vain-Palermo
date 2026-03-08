@@ -27,6 +27,10 @@ import {
     Sparkles,
     LayoutDashboard,
     RefreshCw,
+    Music,
+    Wine,
+    UtensilsCrossed,
+    Palette,
 } from 'lucide-react';
 
 // ==================== TYPES ====================
@@ -101,6 +105,19 @@ export default function ReceptionPage() {
                         <p className="text-[10px] text-stone-500 uppercase tracking-tighter">Panel de gestión</p>
                     </div>
                 </div>
+                <div className="flex items-center space-x-4">
+                    <button
+                        onClick={() => window.open('/', '_blank')}
+                        className="text-xs text-stone-400 hover:text-amber-500 transition-colors flex items-center space-x-1"
+                    >
+                        <span>Ver Web de Huéspedes</span>
+                    </button>
+                    <div className="h-4 w-px bg-stone-700" />
+                    <div className="flex items-center space-x-2 text-stone-400">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] uppercase tracking-widest">En Línea</span>
+                    </div>
+                </div>
             </div>
 
             {/* Tab Navigation */}
@@ -140,9 +157,14 @@ function RequestsTab() {
 
     const fetchRequests = async () => {
         try {
-            const res = await fetch('/api/requests', { cache: 'no-store' });
+            const timestamp = Date.now();
+            const res = await fetch(`/api/requests?t=${timestamp}`, {
+                cache: 'no-store',
+                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+            });
             if (res.ok) {
                 const data = await res.json();
+                console.log(`[Reception Polling] Received ${data.length} requests at ${new Date().toLocaleTimeString()}`);
                 setRequests(data);
                 if (selectedRequest) {
                     const updated = data.find((r: Request) => r.id === selectedRequest.id);
@@ -150,15 +172,15 @@ function RequestsTab() {
                 }
             }
         } catch (error) {
-            console.error('Failed to fetch requests', error);
+            console.error('[Reception Polling] Failed to fetch requests:', error);
         }
     };
 
     useEffect(() => {
         fetchRequests();
-        const interval = setInterval(fetchRequests, 3000);
+        const interval = setInterval(fetchRequests, 2000); // 2s polling
         return () => clearInterval(interval);
-    }, [selectedRequest?.id]);
+    }, [selectedRequest?.id]); // Also refresh when selectedRequest changes context
 
     const handleStatusUpdate = async (id: string, newStatus: string) => {
         try {
@@ -312,20 +334,22 @@ function RequestsTab() {
                         </div>
 
                         {/* Chat / Timeline */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-stone-50">
+                        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-white">
                             {selectedRequest.messages.map((msg, idx) => (
                                 <div key={idx} className={`flex ${msg.sender === 'reception' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${msg.sender === 'reception'
-                                        ? 'bg-stone-900 text-white rounded-br-sm'
-                                        : 'bg-white border border-amber-200 text-stone-900 rounded-bl-sm'
+                                    <div className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm border ${msg.sender === 'reception'
+                                        ? 'bg-stone-900 border-stone-900 text-white rounded-br-none'
+                                        : 'bg-amber-50 border-amber-200 text-stone-900 rounded-bl-none'
                                         }`}>
-                                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${msg.sender === 'reception' ? 'text-stone-400' : 'text-amber-600'}`}>
-                                            {msg.sender === 'reception' ? '🛎️ Recepción' : '👤 Huésped'}
-                                        </p>
-                                        <p className="text-[15px] leading-relaxed">{msg.text}</p>
-                                        <p className={`text-[10px] mt-1.5 flex justify-end ${msg.sender === 'reception' ? 'text-stone-500' : 'text-stone-400'}`}>
-                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
+                                        <div className="flex items-center justify-between mb-2 border-b border-opacity-20 border-current pb-1">
+                                            <p className={`text-[10px] font-black uppercase tracking-widest ${msg.sender === 'reception' ? 'text-stone-400' : 'text-amber-800'}`}>
+                                                {msg.sender === 'reception' ? '🛎️ Recepción' : '👤 Huésped'}
+                                            </p>
+                                            <p className={`text-[9px] font-medium ${msg.sender === 'reception' ? 'text-stone-500' : 'text-amber-600'}`}>
+                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                        <p className="text-[15px] leading-relaxed font-medium">{msg.text}</p>
                                     </div>
                                 </div>
                             ))}
@@ -498,35 +522,44 @@ function ExperiencesTab() {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {experiences.map((exp) => (
-                            <div key={exp.id} className="bg-white border border-stone-200 rounded-lg p-4 flex items-center justify-between hover:shadow-sm transition">
-                                <div className="flex-1">
-                                    <div className="flex items-center space-x-3 mb-1">
-                                        <h3 className="font-medium text-stone-900">{exp.title}</h3>
-                                        <span className="text-xs px-2 py-0.5 bg-stone-100 rounded-full text-stone-600 capitalize">{exp.category}</span>
-                                        {exp.bookable && (
-                                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Reservable</span>
-                                        )}
+                        {experiences.map((exp) => {
+                            const Icon = (exp.icon === 'Music' ? Music :
+                                exp.icon === 'Wine' ? Wine :
+                                    exp.icon === 'UtensilsCrossed' ? UtensilsCrossed : Palette);
+                            return (
+                                <div key={exp.id} className="bg-white border border-stone-200 rounded-lg p-4 flex items-center justify-between hover:shadow-sm transition group">
+                                    <div className="flex items-center space-x-4 flex-1">
+                                        <div className="bg-stone-50 p-3 rounded-lg border border-stone-100 group-hover:bg-amber-50 group-hover:border-amber-100 transition-colors">
+                                            <Icon className="w-5 h-5 text-stone-400 group-hover:text-amber-600" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center space-x-3 mb-1">
+                                                <h3 className="font-medium text-stone-900">{exp.title}</h3>
+                                                <span className="text-[10px] px-2 py-0.5 bg-stone-100 rounded-full text-stone-500 uppercase tracking-tighter font-bold">{exp.category}</span>
+                                                {exp.bookable && (
+                                                    <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full uppercase tracking-tighter font-bold">✓ Reservable</span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-stone-500">{exp.venue} · {exp.time} · {exp.price}</p>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-stone-500">{exp.venue} · {exp.time} · {exp.price}</p>
-                                    <p className="text-sm text-stone-400 mt-1 line-clamp-1">{exp.description}</p>
+                                    <div className="flex items-center space-x-2 ml-4">
+                                        <button
+                                            onClick={() => { setEditing(exp); setCreating(false); }}
+                                            className="p-2 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded transition"
+                                        >
+                                            <Edit3 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(exp.id)}
+                                            className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded transition"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center space-x-2 ml-4">
-                                    <button
-                                        onClick={() => { setEditing(exp); setCreating(false); }}
-                                        className="p-2 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded transition"
-                                    >
-                                        <Edit3 className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(exp.id)}
-                                        className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded transition"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                         {experiences.length === 0 && (
                             <div className="text-center py-12 text-stone-400">
                                 <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
