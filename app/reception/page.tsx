@@ -769,10 +769,25 @@ function ServicesTab() {
         }
     };
 
-    if (loading || !settings) {
+    if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
                 <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
+            </div>
+        );
+    }
+
+    if (error || !settings) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full space-y-4">
+                <AlertCircle className="w-12 h-12 text-red-500" />
+                <p className="text-stone-600 font-medium">{error || 'No se pudieron cargar los datos'}</p>
+                <button
+                    onClick={fetchSettings}
+                    className="bg-stone-900 text-white px-6 py-2 rounded-lg text-sm hover:bg-stone-800 transition"
+                >
+                    Reintentar
+                </button>
             </div>
         );
     }
@@ -964,10 +979,25 @@ function WifiInfoTab() {
         setSettings({ ...settings, amenities: settings.amenities.filter((_, i) => i !== idx) });
     };
 
-    if (loading || !settings) {
+    if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
                 <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
+            </div>
+        );
+    }
+
+    if (error || !settings) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full space-y-4">
+                <AlertCircle className="w-12 h-12 text-red-500" />
+                <p className="text-stone-600 font-medium">{error || 'No se pudieron cargar los datos'}</p>
+                <button
+                    onClick={fetchSettings}
+                    className="bg-stone-900 text-white px-6 py-2 rounded-lg text-sm hover:bg-stone-800 transition"
+                >
+                    Reintentar
+                </button>
             </div>
         );
     }

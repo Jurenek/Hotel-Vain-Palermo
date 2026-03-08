@@ -100,28 +100,51 @@ export const createRequest = async (request: any): Promise<Request | null> => {
 };
 
 export const updateRequest = async (id: string, updates: any): Promise<Request | null> => {
-    // Map updates to snake_case
-    const dbUpdates: any = {};
-    if (updates.status) dbUpdates.status = updates.status;
-    dbUpdates.updated_at = new Date().toISOString();
+    try {
+        const { message, sender, ...fieldUpdates } = updates;
+        const dbUpdates: any = {};
 
-    const { data, error } = await supabase
-        .from('requests')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select()
-        .single();
+        if (fieldUpdates.status) dbUpdates.status = fieldUpdates.status;
+        dbUpdates.updated_at = new Date().toISOString();
 
-    if (error) return null;
+        // If we have a message, we need to get current ones first
+        if (message) {
+            const current = await getRequestById(id);
+            if (current) {
+                const newMessage = {
+                    sender: sender || 'reception',
+                    text: message,
+                    timestamp: new Date().toISOString()
+                };
+                const currentMessages = Array.isArray(current.messages) ? current.messages : [];
+                dbUpdates.messages = [...currentMessages, newMessage];
+            }
+        }
 
-    return {
-        ...data,
-        guestId: data.guest_id,
-        guestName: data.guest_name,
-        roomNumber: data.room_number,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-    };
+        const { data, error } = await supabase
+            .from('requests')
+            .update(dbUpdates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('[updateRequest] Supabase error:', error);
+            return null;
+        }
+
+        return {
+            ...data,
+            guestId: data.guest_id,
+            guestName: data.guest_name,
+            roomNumber: data.room_number,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
+        };
+    } catch (error) {
+        console.error('[updateRequest] Exception:', error);
+        return null;
+    }
 };
 
 export const addMessage = async (requestId: string, message: Omit<Message, 'timestamp'>): Promise<Request | null> => {
