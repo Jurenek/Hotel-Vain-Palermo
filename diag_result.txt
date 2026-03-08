@@ -1,0 +1,27 @@
+--- DB REPORT ---
+
+✅ hotel_settings: 1 rows found.
+Example: {
+  "id": "main",
+  "wifi_network": "VAIN_GUEST",
+  "wifi_password": "love2bevain",
+  "breakfast_sta...
+
+-----------------
+
+✅ experiences: 5 rows found.
+Example: {
+  "id": 1,
+  "title": "Cena Show de Tango",
+  "venue": "El Querandi",
+  "description": "Experienci...
+
+-----------------
+
+✅ requests: 2 rows found.
+Example: {
+  "id": "2f314955-1b7d-43ed-a837-6c2343687f8c",
+  "guest_id": "Invitado",
+  "guest_name": "Invitad...
+
+--- END REPORT ---

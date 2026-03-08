@@ -282,7 +282,9 @@ function RequestsTab() {
                                     {req.status === 'completed' && <span className="text-[10px] px-2 py-0.5 bg-emerald-600 text-white rounded-full font-bold uppercase tracking-wider">Listo</span>}
                                 </div>
                                 <p className="text-sm text-stone-500 line-clamp-2">
-                                    {req.messages[0]?.text || "Sin mensaje"}
+                                    {req.messages && req.messages.length > 0
+                                        ? req.messages[req.messages.length - 1].text
+                                        : "Sin mensaje"}
                                 </p>
                             </div>
                         ))
@@ -716,21 +718,25 @@ function ExperienceModal({ experience, isNew, saving, iconOptions, categoryOptio
 function ServicesTab() {
     const [settings, setSettings] = useState<HotelSettings | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState('');
 
     const fetchSettings = async () => {
         try {
             setLoading(true);
+            setError(null);
             const res = await fetch('/api/hotel-settings', { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
                 setSettings(data);
             } else {
+                setError(`API Error: ${res.status}`);
                 console.error('[ServicesTab] API Error:', res.status);
             }
-        } catch (error) {
-            console.error('[ServicesTab] Connection Error:', error);
+        } catch (err) {
+            setError('Connection Error');
+            console.error('[ServicesTab] Connection Error:', err);
         } finally {
             setLoading(false);
         }
@@ -895,6 +901,7 @@ function ServicesTab() {
 function WifiInfoTab() {
     const [settings, setSettings] = useState<HotelSettings | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState('');
     const [newAmenity, setNewAmenity] = useState('');
@@ -902,15 +909,18 @@ function WifiInfoTab() {
     const fetchSettings = async () => {
         try {
             setLoading(true);
+            setError(null);
             const res = await fetch('/api/hotel-settings', { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
                 setSettings(data);
             } else {
+                setError(`API Error: ${res.status}`);
                 console.error('[WifiInfoTab] API Error:', res.status);
             }
-        } catch (error) {
-            console.error('[WifiInfoTab] Connection Error:', error);
+        } catch (err) {
+            setError('Connection Error');
+            console.error('[WifiInfoTab] Connection Error:', err);
         } finally {
             setLoading(false);
         }

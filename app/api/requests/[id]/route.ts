@@ -21,14 +21,19 @@ export async function PATCH(
 
         let updatedRequest = existingRequest;
 
-        if (status) {
-            const result = await updateRequest(id, { status });
+        if (status && message) {
+            const result = await updateRequest(id, { status, message, sender: sender || 'reception' });
             if (result) updatedRequest = result;
-        }
+        } else {
+            if (status) {
+                const result = await updateRequest(id, { status });
+                if (result) updatedRequest = result;
+            }
 
-        if (message) {
-            const result = await addMessage(id, { sender: sender || 'reception', text: message });
-            if (result) updatedRequest = result;
+            if (message) {
+                const result = await addMessage(id, { sender: sender || 'reception', text: message });
+                if (result) updatedRequest = result;
+            }
         }
 
         return NextResponse.json(updatedRequest);
