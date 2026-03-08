@@ -164,12 +164,15 @@ function RequestsTab() {
             });
             if (res.ok) {
                 const data = await res.json();
-                console.log(`[Reception Polling] Received ${data.length} requests at ${new Date().toLocaleTimeString()}`);
+                console.log(`[Reception Polling] Received ${data.length} requests`);
                 setRequests(data);
-                if (selectedRequest) {
-                    const updated = data.find((r: Request) => r.id === selectedRequest.id);
-                    if (updated) setSelectedRequest(updated);
-                }
+
+                // Use a functional update to get the latest selectedRequest
+                setSelectedRequest(prev => {
+                    if (!prev) return null;
+                    const updated = data.find((r: Request) => r.id === prev.id);
+                    return updated || prev;
+                });
             }
         } catch (error) {
             console.error('[Reception Polling] Failed to fetch requests:', error);
@@ -178,9 +181,9 @@ function RequestsTab() {
 
     useEffect(() => {
         fetchRequests();
-        const interval = setInterval(fetchRequests, 2000); // 2s polling
+        const interval = setInterval(fetchRequests, 3000);
         return () => clearInterval(interval);
-    }, [selectedRequest?.id]); // Also refresh when selectedRequest changes context
+    }, []);
 
     const handleStatusUpdate = async (id: string, newStatus: string) => {
         try {

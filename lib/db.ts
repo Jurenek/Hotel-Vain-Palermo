@@ -84,9 +84,10 @@ export const createRequest = async (request: any): Promise<Request | null> => {
         .single();
 
     if (error) {
-        console.error('Error creating request:', error);
+        console.error('[createRequest] Supabase error:', error);
         return null;
     }
+    console.log('[createRequest] Request created successfully:', data.id);
 
     return {
         ...data,
@@ -126,14 +127,19 @@ export const updateRequest = async (id: string, updates: any): Promise<Request |
 export const addMessage = async (requestId: string, message: Omit<Message, 'timestamp'>): Promise<Request | null> => {
     // 1. Get current messages
     const current = await getRequestById(requestId);
-    if (!current) return null;
+    if (!current) {
+        console.error(`[addMessage] Request ${requestId} not found`);
+        return null;
+    }
 
     const newMessage = {
         ...message,
         timestamp: new Date().toISOString()
     };
 
-    const updatedMessages = [...current.messages, newMessage];
+    // Ensure messages is an array
+    const currentMessages = Array.isArray(current.messages) ? current.messages : [];
+    const updatedMessages = [...currentMessages, newMessage];
 
     const { data, error } = await supabase
         .from('requests')
@@ -145,7 +151,10 @@ export const addMessage = async (requestId: string, message: Omit<Message, 'time
         .select()
         .single();
 
-    if (error) return null;
+    if (error) {
+        console.error('[addMessage] Supabase error:', error);
+        return null;
+    }
 
     return {
         ...data,

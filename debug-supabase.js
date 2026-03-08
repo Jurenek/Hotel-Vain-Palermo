@@ -1,37 +1,52 @@
 
 const { createClient } = require('@supabase/supabase-js');
-const dotenv = require('dotenv');
-dotenv.config({ path: '.env.local' });
+const fs = require('fs');
+const path = require('path');
 
-async function test() {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Read env variables
+function getEnv() {
+    const envPath = path.join(__dirname, '.env.local');
+    if (!fs.existsSync(envPath)) return {};
+    const content = fs.readFileSync(envPath, 'utf8');
+    const env = {};
+    content.split('\n').forEach(line => {
+        const [key, value] = line.split('=');
+        if (key && value) env[key.trim()] = value.trim();
+    });
+    return env;
+}
 
-    console.log('Testing with URL:', url);
+const env = getEnv();
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!url || !key) {
-        console.error('Missing env variables');
+if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase credentials in .env.local');
+    process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function checkDb() {
+    console.log('--- Checking Supabase Requests ---');
+    const { data, error } = await supabase
+        .from('requests')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(5);
+
+    if (error) {
+        console.error('Error fetching from Supabase:', error);
         return;
     }
 
-    const supabase = createClient(url, key);
-
-    console.log('Testing connection to "requests" table...');
-    const { data, error } = await supabase.from('requests').select('*').limit(1);
-
-    if (error) {
-        console.error('Error querying "requests":', error);
-    } else {
-        console.log('Success! Found', data.length, 'rows.');
-    }
-
-    console.log('Testing connection to "hotel_settings" table...');
-    const res2 = await supabase.from('hotel_settings').select('*').limit(1);
-    if (res2.error) {
-        console.error('Error querying "hotel_settings":', res2.error);
-    } else {
-        console.log('Success! Found', res2.data.length, 'rows.');
-    }
+    console.log(`Found ${data.length} recent requests in DB.`);
+    data.forEach(r => {
+        console.log(`- Request ${r.id}: ${r.status}, ${r.messages.length} messages`);
+        if (r.messages.length > 0) {
+            console.log(`  Latest: [${r.messages[r.messages.length - 1].sender}] ${r.messages[r.messages.length - 1].text}`);
+        }
+    });
 }
 
-test();
+checkDb();

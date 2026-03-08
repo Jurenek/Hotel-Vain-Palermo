@@ -77,9 +77,9 @@ export default function ConciergePage() {
 
     useEffect(() => {
         fetchRequests();
-        const interval = setInterval(fetchRequests, 2000); // More frequent polling (2s)
+        const interval = setInterval(fetchRequests, 3000);
         return () => clearInterval(interval);
-    }, [guest.name, guest.roomNumber]);
+    }, []); // Only the first time, polling will handle it
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,7 +90,7 @@ export default function ConciergePage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    guestId: guest.email || guest.name, // Use name as fallback ID
+                    guestId: guest.email || guest.name,
                     guestName: guest.name,
                     roomNumber: guest.roomNumber,
                     type: formData.queryType,
@@ -101,11 +101,14 @@ export default function ConciergePage() {
             if (res.ok) {
                 setSubmitted(true);
                 setFormData({ queryType: '', message: '' });
-                fetchRequests(); // Refresh list immediately
+                await fetchRequests(); // Refresh list immediately
                 setTimeout(() => setSubmitted(false), 3000);
+            } else {
+                const err = await res.json();
+                console.error('[Concierge] Submission failed:', err);
             }
         } catch (error) {
-            console.error('Error submitting request', error);
+            console.error('[Concierge] Error submitting request:', error);
         } finally {
             setLoading(false);
         }
