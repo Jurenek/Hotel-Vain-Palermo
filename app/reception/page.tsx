@@ -32,6 +32,7 @@ import {
     UtensilsCrossed,
     Palette,
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 // ==================== TYPES ====================
 interface Request {
@@ -181,8 +182,23 @@ function RequestsTab() {
 
     useEffect(() => {
         fetchRequests();
-        const interval = setInterval(fetchRequests, 3000);
-        return () => clearInterval(interval);
+        
+        // Subscribe to changes on the requests table
+        const channel = supabase
+            .channel('reception-requests')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'requests' },
+                (payload) => {
+                    console.log('[Realtime] Request changed:', payload);
+                    fetchRequests(); // Re-fetch all to keep it simple and consistent
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const handleStatusUpdate = async (id: string, newStatus: string) => {

@@ -13,9 +13,11 @@ import {
     Phone,
     Mail,
     Send,
-    Loader2
+    Loader2,
+    Music
 } from 'lucide-react';
 import { useGuestStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 
 interface Request {
     id: string;
@@ -37,10 +39,11 @@ export default function ConciergePage() {
     const [requests, setRequests] = useState<Request[]>([]);
 
     const queryTypes = [
-        { id: 'taxi', label: 'Solicitar taxi/transfer', icon: Car },
-        { id: 'restaurant', label: 'Reservas restaurantes', icon: UtensilsCrossed },
-        { id: 'tourism', label: 'Información turística', icon: MapPin },
-        { id: 'problem', label: 'Problema en habitación', icon: AlertCircle },
+        { id: 'tango_show', label: 'Reserva Show de Tango', icon: Music },
+        { id: 'city_tour', label: 'Reserva City Tour', icon: MapPin },
+        { id: 'recommendations', label: 'Recomendaciones en la zona', icon: UtensilsCrossed },
+        { id: 'taxi', label: 'Solicitar Taxi / Transfer', icon: Car },
+        { id: 'housekeeping', label: 'Housekeeping / Mantenimiento', icon: AlertCircle },
         { id: 'other', label: 'Otra consulta', icon: MessageCircle },
     ];
 
@@ -77,9 +80,24 @@ export default function ConciergePage() {
 
     useEffect(() => {
         fetchRequests();
-        const interval = setInterval(fetchRequests, 3000);
-        return () => clearInterval(interval);
-    }, []); // Only the first time, polling will handle it
+        
+        // Subscribe to changes on the requests table
+        const channel = supabase
+            .channel('guest-requests')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'requests' },
+                (payload) => {
+                    console.log('[Realtime] Request changed:', payload);
+                    fetchRequests();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
