@@ -13,6 +13,7 @@ export interface GuestData {
     checkInCompleted: boolean;
     checkInTime?: string;
     language: 'es' | 'en';
+    reservationId?: string;
 }
 
 interface GuestStore {

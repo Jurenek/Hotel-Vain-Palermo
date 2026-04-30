@@ -198,3 +198,39 @@ export class CloudbedsAdapter implements IPMSAdapter {
     }
   }
 }
+
+/**
+ * Sincroniza un cargo de upsell al folio de la reserva en Cloudbeds.
+ * Stub listo para activar cuando estén disponibles las credenciales de API.
+ *
+ * Para activar: implementar POST /api/v1.1/postFolioCharge con:
+ *   reservationID, description, quantity, amount
+ */
+export async function syncUpsellToReservation(
+  bookingId: string,
+  reservationId: string,
+  upsellTitle: string,
+  amount: number
+): Promise<void> {
+  const apiKey = process.env.CLOUDBEDS_API_KEY;
+  const propertyId = process.env.CLOUDBEDS_PROPERTY_ID;
+
+  if (!apiKey || !propertyId) {
+    console.log(
+      `[Cloudbeds stub] Cargo "${upsellTitle}" (booking: ${bookingId}) → reserva ${reservationId} — $${amount}. Pendiente de credenciales de API.`
+    );
+    return;
+  }
+
+  // TODO: activar cuando estén disponibles las credenciales
+  // const adapter = new CloudbedsAdapter(apiKey, propertyId);
+  // await adapter.request('/postFolioCharge', 'POST', {
+  //   reservationID: reservationId,
+  //   description: upsellTitle,
+  //   quantity: 1,
+  //   amount,
+  // });
+  console.log(
+    `[Cloudbeds] Sync activado para "${upsellTitle}" → reserva ${reservationId}`
+  );
+}

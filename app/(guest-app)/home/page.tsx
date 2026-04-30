@@ -14,6 +14,7 @@ import {
     Home as HomeIcon,
     Info,
     Loader2,
+    Sparkles,
 } from 'lucide-react';
 import { useGuestStore } from '@/lib/store';
 import { getGreeting } from '@/lib/utils';
@@ -239,12 +240,13 @@ const QuickActionButton = ({ icon: Icon, label, onClick, className = '' }: {
 
 // Bottom Navigation
 const BottomNav = ({ active, onNavigate }: { active: string; onNavigate: (screen: string) => void }) => (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-stone-200 px-6 py-3 shadow-2xl z-40">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-stone-200 px-4 py-3 shadow-2xl z-40">
         <div className="flex items-center justify-around">
             <NavButton icon={HomeIcon} label="Inicio" active={active === 'home'} onClick={() => onNavigate('home')} />
-            <NavButton icon={Music} label="Experiencias" active={active === 'experiences'} onClick={() => onNavigate('experiences')} />
-            <NavButton icon={Info} label="Info" active={active === 'info'} onClick={() => onNavigate('info')} />
+            <NavButton icon={Music} label="Salidas" active={active === 'experiences'} onClick={() => onNavigate('experiences')} />
+            <NavButton icon={Sparkles} label="Extras" active={active === 'extras'} onClick={() => onNavigate('extras')} />
             <NavButton icon={MessageCircle} label="Concierge" active={active === 'concierge'} onClick={() => onNavigate('concierge')} />
+            <NavButton icon={Info} label="Info" active={active === 'info'} onClick={() => onNavigate('info')} />
         </div>
     </div>
 );

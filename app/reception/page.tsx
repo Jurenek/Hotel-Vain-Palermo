@@ -31,6 +31,10 @@ import {
     Wine,
     UtensilsCrossed,
     Palette,
+    Sun,
+    Moon,
+    Crown,
+    CreditCard,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -81,7 +85,21 @@ interface HotelSettings {
     amenities: string[];
 }
 
-type TabId = 'requests' | 'experiences' | 'services' | 'wifi';
+type TabId = 'requests' | 'experiences' | 'services' | 'wifi' | 'charges';
+
+interface RoomCharge {
+    id: string;
+    status: 'pending' | 'confirmed' | 'cancelled';
+    requestedTime?: string;
+    createdAt: string;
+    notes: string;
+    upsellTitle: string;
+    upsellType: string;
+    price: number;
+    currency: string;
+    roomNumber?: string;
+    guestName?: string;
+}
 
 // ==================== MAIN COMPONENT ====================
 export default function ReceptionPage() {
@@ -89,6 +107,7 @@ export default function ReceptionPage() {
 
     const tabs: { id: TabId; label: string; icon: any }[] = [
         { id: 'requests', label: 'Solicitudes', icon: MessageSquare },
+        { id: 'charges', label: 'Cargos', icon: CreditCard },
         { id: 'experiences', label: 'Experiencias', icon: Sparkles },
         { id: 'services', label: 'Servicios', icon: Coffee },
         { id: 'wifi', label: 'WiFi & Info', icon: Wifi },
@@ -141,6 +160,7 @@ export default function ReceptionPage() {
             {/* Tab Content */}
             <div className="flex-1 overflow-hidden">
                 {activeTab === 'requests' && <RequestsTab />}
+                {activeTab === 'charges' && <ChargesTab />}
                 {activeTab === 'experiences' && <ExperiencesTab />}
                 {activeTab === 'services' && <ServicesTab />}
                 {activeTab === 'wifi' && <WifiInfoTab />}
@@ -406,6 +426,257 @@ function RequestsTab() {
                     <div className="flex-1 flex flex-col items-center justify-center text-stone-400 bg-stone-50">
                         <MessageSquare className="w-16 h-16 mb-4 opacity-20" />
                         <p className="text-lg font-light">Selecciona una solicitud para ver detalles</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ==================== CHARGES TAB ====================
+function ChargesTab() {
+    const [charges, setCharges] = useState<RoomCharge[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed'>('pending');
+    const [updating, setUpdating] = useState<string | null>(null);
+    const [toast, setToast] = useState('');
+
+    const showToast = (msg: string) => {
+        setToast(msg);
+        setTimeout(() => setToast(''), 3000);
+    };
+
+    const fetchCharges = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('upsell_bookings')
+                .select('id, status, requested_time, created_at, notes, upsell_catalog(title, type, price, currency)')
+                .eq('payment_method', 'room_charge')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            const mapped: RoomCharge[] = (data ?? []).map((b) => {
+                const catalog = b.upsell_catalog as any;
+                let roomNumber = '';
+                let guestName = '';
+                try {
+                    const parsed = JSON.parse(b.notes ?? '{}');
+                    roomNumber = parsed.roomNumber ?? '';
+                    guestName = parsed.guestName ?? '';
+                } catch {
+                    // notes not JSON
+                }
+                return {
+                    id: b.id,
+                    status: b.status,
+                    requestedTime: b.requested_time,
+                    createdAt: b.created_at,
+                    notes: b.notes ?? '',
+                    upsellTitle: catalog?.title ?? 'Servicio',
+                    upsellType: catalog?.type ?? '',
+                    price: catalog?.price ?? 0,
+                    currency: catalog?.currency ?? 'USD',
+                    roomNumber,
+                    guestName,
+                };
+            });
+
+            setCharges(mapped);
+        } catch (err) {
+            console.error('[ChargesTab] fetch error', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCharges();
+
+        const channel = supabase
+            .channel('reception-charges')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'upsell_bookings' }, () => {
+                fetchCharges();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
+
+    const handleStatus = async (id: string, status: 'confirmed' | 'cancelled') => {
+        setUpdating(id);
+        try {
+            const res = await fetch(`/api/upsells/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
+            if (res.ok) {
+                showToast(status === 'confirmed' ? '✅ Cargo confirmado' : '🗑️ Cargo cancelado');
+                fetchCharges();
+            }
+        } catch (err) {
+            console.error('[ChargesTab] status update error', err);
+            showToast('❌ Error al actualizar');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const UPSELL_ICONS: Record<string, any> = {
+        early_checkin: Sun,
+        late_checkout: Moon,
+        room_upgrade: Crown,
+    };
+
+    const filtered = charges.filter((c) => filter === 'all' || c.status === filter);
+
+    return (
+        <div className="h-full overflow-y-auto">
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ y: -40, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -40, opacity: 0 }}
+                        className="fixed top-20 right-6 z-50 bg-stone-900 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
+                    >
+                        {toast}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="p-6 max-w-4xl mx-auto">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 className="text-xl font-medium text-stone-900">Cargos a habitaciones</h2>
+                        <p className="text-sm text-stone-500">Servicios solicitados por los huéspedes</p>
+                    </div>
+                    <button
+                        onClick={fetchCharges}
+                        className="p-2 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {/* Filtros */}
+                <div className="flex space-x-2 mb-5">
+                    {[
+                        { id: 'pending', label: 'Pendientes' },
+                        { id: 'confirmed', label: 'Confirmados' },
+                        { id: 'all', label: 'Todos' },
+                    ].map((f) => (
+                        <button
+                            key={f.id}
+                            onClick={() => setFilter(f.id as any)}
+                            className={`px-4 py-1.5 rounded-full text-xs font-medium uppercase tracking-wider transition ${
+                                filter === f.id
+                                    ? f.id === 'pending'
+                                        ? 'bg-amber-500 text-white'
+                                        : f.id === 'confirmed'
+                                            ? 'bg-emerald-600 text-white'
+                                            : 'bg-stone-900 text-white'
+                                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                            }`}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                    <span className="ml-auto text-xs text-stone-400 self-center">
+                        {filtered.length} {filtered.length === 1 ? 'cargo' : 'cargos'}
+                    </span>
+                </div>
+
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="text-center py-16 text-stone-400">
+                        <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p>No hay cargos {filter !== 'all' ? `en estado "${filter === 'pending' ? 'pendiente' : 'confirmado'}"` : ''}</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {filtered.map((charge) => {
+                            const Icon = UPSELL_ICONS[charge.upsellType] ?? Sparkles;
+                            return (
+                                <div
+                                    key={charge.id}
+                                    className="bg-white border border-stone-200 rounded-xl p-4 flex items-center justify-between hover:shadow-sm transition group"
+                                >
+                                    <div className="flex items-center space-x-4 flex-1 min-w-0">
+                                        <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100 flex-shrink-0">
+                                            <Icon className="w-5 h-5 text-stone-500" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center space-x-2 mb-0.5">
+                                                <span className="font-semibold text-stone-900">
+                                                    Hab. {charge.roomNumber || '—'}
+                                                </span>
+                                                <span className="text-stone-400">·</span>
+                                                <span className="text-sm text-stone-600 truncate">
+                                                    {charge.guestName || 'Huésped'}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-stone-700">{charge.upsellTitle}</p>
+                                            <div className="flex items-center space-x-3 mt-1">
+                                                {charge.requestedTime && (
+                                                    <span className="flex items-center space-x-1 text-xs text-stone-400">
+                                                        <Clock className="w-3 h-3" />
+                                                        <span>{charge.requestedTime}</span>
+                                                    </span>
+                                                )}
+                                                <span className="text-xs text-stone-400">
+                                                    {new Date(charge.createdAt).toLocaleString('es-AR', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                                        {charge.status === 'pending' ? (
+                                            <>
+                                                <button
+                                                    onClick={() => handleStatus(charge.id, 'confirmed')}
+                                                    disabled={updating === charge.id}
+                                                    className="flex items-center space-x-1.5 bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-emerald-700 disabled:opacity-50 transition"
+                                                >
+                                                    {updating === charge.id ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    )}
+                                                    <span>Confirmar</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleStatus(charge.id, 'cancelled')}
+                                                    disabled={updating === charge.id}
+                                                    className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        ) : charge.status === 'confirmed' ? (
+                                            <span className="flex items-center space-x-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full">
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                <span>Confirmado</span>
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full">
+                                                Cancelado
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

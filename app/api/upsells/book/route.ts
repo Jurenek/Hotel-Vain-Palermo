@@ -1,31 +1,25 @@
 /**
  * POST /api/upsells/book
- * Books an upsell and creates a payment intent
+ * Registra un cargo a la habitación del huésped (sin pasarela de pago)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { getPaymentAdapter } from '@/lib/integrations/payments';
+import { syncUpsellToReservation } from '@/lib/integrations/pms/cloudbeds';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { token, upsellId, currency, requestedTime } = body;
+    const { roomNumber, guestName, upsellId, requestedTime } = body;
 
-    if (!token || !upsellId) {
-      return NextResponse.json({ error: 'token and upsellId required' }, { status: 400 });
+    if (!roomNumber || !guestName || !upsellId) {
+      return NextResponse.json(
+        { error: 'roomNumber, guestName y upsellId son requeridos' },
+        { status: 400 }
+      );
     }
 
-    // Resolve token
-    const { data: tokenRow } = await supabase
-      .from('checkin_tokens')
-      .select('reservation_id, hotel_id, reservations(pms_reservation_id), hotels(slug, name)')
-      .eq('token', token)
-      .single();
-
-    if (!tokenRow) return NextResponse.json({ error: 'Invalid token' }, { status: 404 });
-
-    // Get upsell
+    // Obtener el upsell del catálogo
     const { data: upsell } = await supabase
       .from('upsell_catalog')
       .select('*')
@@ -33,63 +27,75 @@ export async function POST(req: NextRequest) {
       .eq('active', true)
       .single();
 
-    if (!upsell) return NextResponse.json({ error: 'Upsell not found' }, { status: 404 });
+    if (!upsell) {
+      return NextResponse.json({ error: 'Servicio no encontrado' }, { status: 404 });
+    }
 
-    const selectedCurrency = (currency ?? upsell.currency ?? 'USD') as 'USD' | 'ARS';
-    const hotel = tokenRow.hotels as any;
+    // Buscar al huésped por número de habitación para obtener reservation_id
+    const { data: guestRecord } = await supabase
+      .from('hotel_guests')
+      .select('id, reservation_id, hotel_id')
+      .eq('room_number', roomNumber)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    // Create payment intent
-    const payments = getPaymentAdapter(selectedCurrency);
-    const intent = await payments.createIntent({
-      amount: upsell.price,
-      currency: selectedCurrency,
-      description: `${upsell.title} — ${hotel.name}`,
-      metadata: {
-        upsellId,
-        reservationId: tokenRow.reservation_id,
-        hotelSlug: hotel.slug,
-        requestedTime: requestedTime ?? '',
-      },
-      successUrl: `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://vain-hotel-app.vercel.app'}/checkin/${token}/confirm?upsell=success`,
-      cancelUrl: `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://vain-hotel-app.vercel.app'}/checkin/${token}/upsells`,
-    });
+    const hotelId = guestRecord?.hotel_id ?? upsell.hotel_id;
+    const reservationId = guestRecord?.reservation_id ?? null;
+    const guestId = guestRecord?.id ?? null;
 
-    // Record upsell booking
-    await supabase.from('upsell_bookings').insert({
-      hotel_id: tokenRow.hotel_id,
-      reservation_id: tokenRow.reservation_id,
-      upsell_id: upsellId,
-      price: upsell.price,
-      currency: selectedCurrency,
-      payment_method: payments.provider,
-      payment_id: intent.id,
-      payment_status: 'pending',
-      status: 'pending',
-      requested_time: requestedTime,
-    });
+    // Evitar duplicados: verificar si ya tiene este servicio solicitado o confirmado
+    if (reservationId) {
+      const { data: existing } = await supabase
+        .from('upsell_bookings')
+        .select('id')
+        .eq('reservation_id', reservationId)
+        .eq('upsell_id', upsellId)
+        .in('status', ['pending', 'confirmed'])
+        .maybeSingle();
 
-    // Record payment intent
-    await supabase.from('payment_intents').insert({
-      hotel_id: tokenRow.hotel_id,
-      provider: payments.provider,
-      external_id: intent.id,
-      amount: upsell.price,
-      currency: selectedCurrency,
-      metadata: {
-        upsellId,
-        reservationId: tokenRow.reservation_id,
-      },
-    });
+      if (existing) {
+        return NextResponse.json(
+          { error: 'Ya solicitaste este servicio' },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Crear el cargo a la habitación
+    const { data: booking, error } = await supabase
+      .from('upsell_bookings')
+      .insert({
+        hotel_id: hotelId,
+        reservation_id: reservationId,
+        upsell_id: upsellId,
+        guest_id: guestId,
+        price: upsell.price,
+        currency: upsell.currency ?? 'USD',
+        payment_method: 'room_charge',
+        payment_status: 'room_charge',
+        status: 'pending',
+        requested_time: requestedTime ?? null,
+        notes: JSON.stringify({ roomNumber, guestName }),
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('[POST /api/upsells/book]', error);
+      return NextResponse.json({ error: 'Error al registrar el cargo' }, { status: 500 });
+    }
+
+    // Stub: sincronizar con Cloudbeds cuando estén disponibles las credenciales
+    if (reservationId) {
+      await syncUpsellToReservation(booking.id, reservationId, upsell.title, upsell.price);
+    }
 
     return NextResponse.json({
-      intentId: intent.id,
-      provider: intent.provider,
-      // Stripe: needs client-side SDK
-      clientSecret: intent.clientSecret,
-      // MercadoPago: redirect to checkout URL
-      checkoutUrl: intent.checkoutUrl,
-      amount: upsell.price,
-      currency: selectedCurrency,
+      bookingId: booking.id,
+      upsellTitle: upsell.title,
+      roomNumber,
+      status: 'pending',
     });
   } catch (err) {
     console.error('[POST /api/upsells/book]', err);

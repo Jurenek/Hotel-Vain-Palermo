@@ -9,7 +9,17 @@ import { getPMSForHotel } from '@/lib/integrations/pms';
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token');
-  if (!token) return NextResponse.json({ error: 'Token required' }, { status: 400 });
+
+  // Sin token: devolver catálogo completo de upsells activos (para la app del huésped post check-in)
+  if (!token) {
+    const { data: catalog } = await supabase
+      .from('upsell_catalog')
+      .select('id, type, title, description, price, currency, max_hours')
+      .eq('active', true)
+      .order('sort_order');
+
+    return NextResponse.json({ upsells: catalog ?? [] });
+  }
 
   // Resolve token → reservation
   const { data: tokenRow } = await supabase
