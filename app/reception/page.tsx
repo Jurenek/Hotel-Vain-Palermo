@@ -35,6 +35,7 @@ import {
     Moon,
     Crown,
     CreditCard,
+    LogOut,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -104,6 +105,18 @@ interface RoomCharge {
 // ==================== MAIN COMPONENT ====================
 export default function ReceptionPage() {
     const [activeTab, setActiveTab] = useState<TabId>('requests');
+    const [loggingOut, setLoggingOut] = useState(false);
+
+    const handleLogout = async () => {
+        setLoggingOut(true);
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/';
+        } catch (err) {
+            console.error('Logout error:', err);
+            setLoggingOut(false);
+        }
+    };
 
     const tabs: { id: TabId; label: string; icon: any }[] = [
         { id: 'requests', label: 'Solicitudes', icon: MessageSquare },
@@ -137,6 +150,15 @@ export default function ReceptionPage() {
                         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                         <span className="text-[10px] uppercase tracking-widest">En Línea</span>
                     </div>
+                    <div className="h-4 w-px bg-stone-700" />
+                    <button
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                        className="text-xs text-stone-400 hover:text-red-400 transition-colors flex items-center space-x-1 disabled:opacity-50"
+                    >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Salir</span>
+                    </button>
                 </div>
             </div>
 

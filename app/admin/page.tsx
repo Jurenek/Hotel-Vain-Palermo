@@ -6,7 +6,7 @@ import {
   Users, CheckSquare, TrendingUp, Calendar, Clock,
   Copy, Check, RefreshCw, ChevronRight, Star,
   AlertCircle, LogIn, Loader2, ArrowUpRight,
-  MessageSquare, BarChart3, Settings, Wifi
+  MessageSquare, BarChart3, Settings, Wifi, LogOut
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -233,6 +233,18 @@ export default function AdminDashboard() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<{ url: string; name: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'checkins' | 'upsells'>('overview');
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Logout error:', err);
+      setLoggingOut(false);
+    }
+  };
 
   const loadData = async () => {
     setLoadingData(true);
@@ -279,6 +291,14 @@ export default function AdminDashboard() {
             >
               <LogIn className="w-4 h-4" />
               Check-in
+            </button>
+            <div className="w-px h-6 bg-stone-700" />
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="p-2 text-stone-400 hover:text-red-400 transition-colors disabled:opacity-50"
+            >
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>
